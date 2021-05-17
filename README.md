@@ -1,7 +1,7 @@
 # Remote storage adapter
 
 This is a write adapter that receives samples via Prometheus's remote write
-protocol and stores them in Graphite, InfluxDB, or OpenTSDB. It is meant as a
+protocol and stores them in Graphite, InfluxDB, clickhouse or OpenTSDB. It is meant as a
 replacement for the built-in specific remote storage implementations that have
 been removed from Prometheus.
 
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS prometheus.metrics ON CLUSTER you_cluster
      ts DateTime,
      updated DateTime DEFAULT now()
 )
-ENGINE = GraphiteMergeTree(
+ENGINE = ReplicatedGraphiteMergeTree(
      '/clickhouse/tables/{shard}/prometheus.metrics',
      '{replica}', date, (name, tags, ts), 8192, 'graphite_rollup'
 )
