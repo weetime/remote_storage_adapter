@@ -59,7 +59,9 @@ func (s *sqlBuilder) formatSelect() error {
 	}
 
 	s.sqlStr.WriteString(fmt.Sprintf(selectSQL, divStep, divStep, quantile, s.database, s.table))
-	s.formatWhere(sTime, eTime)
+	if err := s.formatWhere(sTime, eTime); err != nil {
+		return err
+	}
 	return nil
 }
 

@@ -115,7 +115,7 @@ func main() {
 
 	writers, readers := buildClients(logger, cfg)
 	if err := serve(logger, cfg.listenAddr, writers, readers); err != nil {
-		level.Error(logger).Log("msg", "Failed to listen", "addr", cfg.listenAddr, "err", err)
+		_ = level.Error(logger).Log("msg", "Failed to listen", "addr", cfg.listenAddr, "err", err)
 		os.Exit(1)
 	}
 }
@@ -210,7 +210,7 @@ func buildClients(logger log.Logger, cfg *config) ([]writer, []reader) {
 	if cfg.influxdbURL != "" {
 		url, err := url.Parse(cfg.influxdbURL)
 		if err != nil {
-			level.Error(logger).Log("msg", "Failed to parse InfluxDB URL", "url", cfg.influxdbURL, "err", err)
+			_ = level.Error(logger).Log("msg", "Failed to parse InfluxDB URL", "url", cfg.influxdbURL, "err", err)
 			os.Exit(1)
 		}
 		conf := influx.HTTPConfig{
@@ -255,7 +255,7 @@ func buildClients(logger log.Logger, cfg *config) ([]writer, []reader) {
 		writers = append(writers, c)
 		readers = append(readers, c)
 	}
-	level.Info(logger).Log("msg", "Starting up...")
+	_ = level.Info(logger).Log("msg", "Starting up...")
 	return writers, readers
 }
 
@@ -263,21 +263,21 @@ func serve(logger log.Logger, addr string, writers []writer, readers []reader) e
 	http.HandleFunc("/write", func(w http.ResponseWriter, r *http.Request) {
 		compressed, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			level.Error(logger).Log("msg", "Read error", "err", err.Error())
+			_ = level.Error(logger).Log("msg", "Read error", "err", err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		reqBuf, err := snappy.Decode(nil, compressed)
 		if err != nil {
-			level.Error(logger).Log("msg", "Decode error", "err", err.Error())
+			_ = level.Error(logger).Log("msg", "Decode error", "err", err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		var req prompb.WriteRequest
 		if err := proto.Unmarshal(reqBuf, &req); err != nil {
-			level.Error(logger).Log("msg", "Unmarshal error", "err", err.Error())
+			_ = level.Error(logger).Log("msg", "Unmarshal error", "err", err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -299,21 +299,21 @@ func serve(logger log.Logger, addr string, writers []writer, readers []reader) e
 	http.HandleFunc("/read", func(w http.ResponseWriter, r *http.Request) {
 		compressed, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			level.Error(logger).Log("msg", "Read error", "err", err.Error())
+			_ = level.Error(logger).Log("msg", "Read error", "err", err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		reqBuf, err := snappy.Decode(nil, compressed)
 		if err != nil {
-			level.Error(logger).Log("msg", "Decode error", "err", err.Error())
+			_ = level.Error(logger).Log("msg", "Decode error", "err", err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		var req prompb.ReadRequest
 		if err := proto.Unmarshal(reqBuf, &req); err != nil {
-			level.Error(logger).Log("msg", "Unmarshal error", "err", err.Error())
+			_ = level.Error(logger).Log("msg", "Unmarshal error", "err", err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -328,7 +328,7 @@ func serve(logger log.Logger, addr string, writers []writer, readers []reader) e
 		var resp *prompb.ReadResponse
 		resp, err = reader.Read(&req)
 		if err != nil {
-			level.Warn(logger).Log("msg", "Error executing query", "query", req, "storage", reader.Name(), "err", err)
+			_ = level.Warn(logger).Log("msg", "Error executing query", "query", req, "storage", reader.Name(), "err", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -344,7 +344,7 @@ func serve(logger log.Logger, addr string, writers []writer, readers []reader) e
 
 		compressed = snappy.Encode(nil, data)
 		if _, err := w.Write(compressed); err != nil {
-			level.Warn(logger).Log("msg", "Error writing response", "storage", reader.Name(), "err", err)
+			_ = level.Warn(logger).Log("msg", "Error writing response", "storage", reader.Name(), "err", err)
 		}
 	})
 
@@ -375,7 +375,7 @@ func sendSamples(logger log.Logger, w writer, samples model.Samples) {
 	err := w.Write(samples)
 	duration := time.Since(begin).Seconds()
 	if err != nil {
-		level.Warn(logger).Log("msg", "Error sending samples to remote storage", "err", err, "storage", w.Name(), "num_samples", len(samples))
+		_ = level.Warn(logger).Log("msg", "Error sending samples to remote storage", "err", err, "storage", w.Name(), "num_samples", len(samples))
 		failedSamples.WithLabelValues(w.Name()).Add(float64(len(samples)))
 	}
 	sentSamples.WithLabelValues(w.Name()).Add(float64(len(samples)))

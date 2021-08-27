@@ -33,7 +33,6 @@ type Client struct {
 	logger log.Logger
 
 	db       *sql.DB
-	dsn      string
 	database string
 	table    string
 
@@ -49,12 +48,12 @@ func NewClient(logger log.Logger, dsn string, database string, table string) *Cl
 
 	db, err := sql.Open("clickhouse", dsn)
 	if err != nil {
-		level.Error(logger).Log("connecting to clickhouse", err)
+		_ = level.Error(logger).Log("connecting to clickhouse", err)
 		os.Exit(1)
 	}
 
 	if err := db.Ping(); err != nil {
-		level.Error(logger).Log("clickhouse ping", err)
+		_ = level.Error(logger).Log("clickhouse ping", err)
 		os.Exit(1)
 	}
 
@@ -82,13 +81,13 @@ func NewClient(logger log.Logger, dsn string, database string, table string) *Cl
 func (c *Client) Write(samples model.Samples) error {
 	tx, err := c.db.Begin()
 	if err != nil {
-		level.Error(c.logger).Log("begin transaction:", err)
+		_ = level.Error(c.logger).Log("begin transaction:", err)
 		return err
 	}
 
 	smt, err := tx.Prepare(formatInsert(c.database, c.table))
 	if err != nil {
-		level.Error(c.logger).Log("prepare statement:", err)
+		_ = level.Error(c.logger).Log("prepare statement:", err)
 		return err
 	}
 
@@ -102,17 +101,15 @@ func (c *Client) Write(samples model.Samples) error {
 			continue
 		}
 
-		_, err = smt.Exec(ts, m.metricName(), m.tagsFromMetric(), v, ts)
-
-		if err != nil {
-			level.Error(c.logger).Log("statement exec:", err)
+		if _, err = smt.Exec(ts, m.metricName(), m.tagsFromMetric(), v, ts);  err != nil {
+			_ = level.Error(c.logger).Log("statement exec:", err)
 			c.ignoredSamples.Inc()
 			continue
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		level.Error(c.logger).Log("commit failed:", err)
+		_ = level.Error(c.logger).Log("commit failed:", err)
 		c.commitFail.Inc()
 		return err
 	}
@@ -131,14 +128,14 @@ func (c *Client) Read(req *prompb.ReadRequest) (*prompb.ReadResponse, error) {
 	for _, q := range req.Queries {
 		sqlBuilder, err = builder(q, c.database, c.table)
 		if err != nil {
-			level.Error(c.logger).Log("reader getSQL", err)
+			_ = level.Error(c.logger).Log("reader getSQL", err)
 			return nil, err
 		}
 
 		rows, err = c.db.Query(sqlBuilder.String())
 		if err != nil {
-			level.Error(c.logger).Log("reader query failed", sqlStr)
-			level.Error(c.logger).Log("reader query errors", err)
+			_ = level.Error(c.logger).Log("reader query failed", sqlStr)
+			_ = level.Error(c.logger).Log("reader query errors", err)
 			return nil, err
 		}
 
@@ -154,7 +151,7 @@ func (c *Client) Read(req *prompb.ReadRequest) (*prompb.ReadResponse, error) {
 				value float64
 			)
 			if err = rows.Scan(&cnt, &t, &name, &tags, &value); err != nil {
-				level.Error(c.logger).Log("reader scan errors", err)
+				_ = level.Error(c.logger).Log("reader scan errors", err)
 			}
 
 			// borrowed from influx remote storage adapter - array sep

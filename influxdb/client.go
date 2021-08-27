@@ -45,7 +45,7 @@ func NewClient(logger log.Logger, conf influx.HTTPConfig, db string, rp string) 
 	c, err := influx.NewHTTPClient(conf)
 	// Currently influx.NewClient() *should* never return an error.
 	if err != nil {
-		level.Error(logger).Log("err", err)
+		_ = level.Error(logger).Log("err", err)
 		os.Exit(1)
 	}
 
@@ -84,7 +84,7 @@ func (c *Client) Write(samples model.Samples) error {
 	for _, s := range samples {
 		v := float64(s.Value)
 		if math.IsNaN(v) || math.IsInf(v, 0) {
-			level.Debug(c.logger).Log("msg", "Cannot send  to InfluxDB, skipping sample", "value", v, "sample", s)
+			_ = level.Debug(c.logger).Log("msg", "Cannot send  to InfluxDB, skipping sample", "value", v, "sample", s)
 			c.ignoredSamples.Inc()
 			continue
 		}
