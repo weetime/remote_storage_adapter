@@ -248,13 +248,15 @@ func buildClients(logger log.Logger, cfg *config) ([]writer, []reader) {
 		if cfg.clickhouseCaPath != "" {
 			caCert, err := ioutil.ReadFile(cfg.clickhouseCaPath)
 			if err != nil {
-				panic(err)
+				_ = level.Error(logger).Log("read ca-certificate", err)
+				os.Exit(1)
 			}
 			caCertPool := x509.NewCertPool()
 			caCertPool.AppendCertsFromPEM(caCert)
 			err = clickhouseGo.RegisterTLSConfig(tlsConfigKey, &tls.Config{RootCAs: caCertPool})
 			if err != nil {
-				panic(err)
+				_ = level.Error(logger).Log("register tls config", err)
+				os.Exit(1)
 			}
 			options.Set("tls_config", tlsConfigKey)
 			options.Set("secure", "true")
