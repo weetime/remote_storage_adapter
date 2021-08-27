@@ -1,7 +1,6 @@
 package clickhouse
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"strings"
@@ -24,7 +23,7 @@ func formatInsert(database string, table string) string {
 }
 
 type sqlBuilder struct {
-	sqlStr   bytes.Buffer
+	sqlStr   strings.Builder
 	query    *prompb.Query
 	database string
 	table    string
