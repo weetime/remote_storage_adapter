@@ -15,7 +15,10 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	clickhouseGo "github.com/ClickHouse/clickhouse-go"
 	"io/ioutil"
 	"net/http"
 	_ "net/http/pprof"
@@ -59,8 +62,9 @@ type config struct {
 	clickhouseUsername      string
 	clickhousePassword      string
 	clickhouseDatabase      string
-	clickhouseTable         string
-	clickhouseReadTimeout   time.Duration
+	clickhouseTable       string
+	clickhouseCaPath      string
+	clickhouseReadTimeout time.Duration
 	clickhouseWriteTimeout  time.Duration
 	clickhouseAltHosts      string
 	remoteTimeout           time.Duration
@@ -154,6 +158,8 @@ func parseFlags() *config {
 		Default("prometheus").StringVar(&cfg.clickhouseDatabase)
 	a.Flag("clickhouse.table", "The name of the table to use for storing samples in Clickhouse.").
 		Default("metrics").StringVar(&cfg.clickhouseTable)
+	a.Flag("clickhouse.ca-file-path", "Path to CA-certificate used to connect with TLS.").
+		Default("").StringVar(&cfg.clickhouseCaPath)
 	a.Flag("clickhouse.read-timeout", "The timeout to use when read metrics from the Clickhouse.").
 		Default("10s").DurationVar(&cfg.clickhouseReadTimeout)
 	a.Flag("clickhouse.write-timeout", "The timeout to use when write metrics to the Clickhouse.").
@@ -231,18 +237,35 @@ func buildClients(logger log.Logger, cfg *config) ([]writer, []reader) {
 	}
 	if cfg.clickhouseURL != "" {
 
-		q := make(url.Values)
-		q.Set("database", cfg.clickhouseDatabase)
-		q.Set("username", cfg.clickhouseUsername)
-		q.Set("password", cfg.clickhousePassword)
-		q.Set("read_timeout", cfg.clickhouseReadTimeout.String())
-		q.Set("write_timeout", cfg.clickhouseWriteTimeout.String())
-		q.Set("alt_hosts", cfg.clickhouseAltHosts)
+		options := make(url.Values)
+		options.Set("database", cfg.clickhouseDatabase)
+		options.Set("username", cfg.clickhouseUsername)
+		options.Set("password", cfg.clickhousePassword)
+		options.Set("read_timeout", cfg.clickhouseReadTimeout.String())
+		options.Set("write_timeout", cfg.clickhouseWriteTimeout.String())
+		options.Set("alt_hosts", cfg.clickhouseAltHosts)
+		const tlsConfigKey = "clickhouse_tls_config_key"
+		if cfg.clickhouseCaPath != "" {
+			caCert, err := ioutil.ReadFile(cfg.clickhouseCaPath)
+			if err != nil {
+				_ = level.Error(logger).Log("read ca-certificate", err)
+				os.Exit(1)
+			}
+			caCertPool := x509.NewCertPool()
+			caCertPool.AppendCertsFromPEM(caCert)
+			err = clickhouseGo.RegisterTLSConfig(tlsConfigKey, &tls.Config{RootCAs: caCertPool})
+			if err != nil {
+				_ = level.Error(logger).Log("register tls config", err)
+				os.Exit(1)
+			}
+			options.Set("tls_config", tlsConfigKey)
+			options.Set("secure", "true")
+		}
 
 		dsn := (&url.URL{
 			Scheme:   "tcp",
 			Host:     cfg.clickhouseURL,
-			RawQuery: q.Encode(),
+			RawQuery: options.Encode(),
 		}).String()
 
 		c := clickhouse.NewClient(
