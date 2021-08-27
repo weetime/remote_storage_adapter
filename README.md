@@ -10,7 +10,7 @@ data through Prometheus via Prometheus's remote read protocol.
 
 ## Building
 
-```
+```shell
 go build
 ```
 
@@ -18,35 +18,35 @@ go build
 
 Graphite example:
 
-```
+```bash
 ./remote_storage_adapter --graphite-address=localhost:8080
 ```
 
 OpenTSDB example:
 
-```
+```bash
 ./remote_storage_adapter --opentsdb-url=http://localhost:8081/
 ```
 
 InfluxDB example:
 
-```
+```bash
 ./remote_storage_adapter --influxdb-url=http://localhost:8086/ --influxdb.database=prometheus --influxdb.retention-policy=autogen
 ```
 
 Clickhouse example:
-```
+```bash
 ./remote_storage_adapter --clickhouse.url=localhost:9000
 ```
 
 sql for clickhouse
-``` sql
-# note: replace {shard} and {replica} and run on each server
+```sql
+-- note: replace {shard} and {replica} and run on each server
 
-CREATE DATABASE prometheus ON CLUSTER you_cluster
+CREATE DATABASE prometheus ON CLUSTER '{cluster}';
 
 DROP TABLE IF EXISTS prometheus.metrics;
-CREATE TABLE IF NOT EXISTS prometheus.metrics ON CLUSTER you_cluster
+CREATE TABLE IF NOT EXISTS prometheus.metrics ON CLUSTER '{cluster}'
 (
      date Date DEFAULT toDate(0),
      name String,
@@ -58,12 +58,11 @@ CREATE TABLE IF NOT EXISTS prometheus.metrics ON CLUSTER you_cluster
 ENGINE = ReplicatedGraphiteMergeTree(
      '/clickhouse/tables/{shard}/prometheus.metrics',
      '{replica}', date, (name, tags, ts), 8192, 'graphite_rollup'
-)
-
+);
 ```
 
 xml example  for clickhouse server config
-``` xml
+```xml
  <graphite_rollup>
         <path_column_name>tags</path_column_name>
         <time_column_name>ts</time_column_name>
@@ -90,7 +89,7 @@ xml example  for clickhouse server config
 
 To show all flags:
 
-```
+```bash
 ./remote_storage_adapter -h
 ```
 
