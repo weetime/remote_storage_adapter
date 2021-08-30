@@ -1,0 +1,10 @@
+name: Push
+on: push
+jobs:
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Format
+        run: make fmt
+        continue-on-error: true
