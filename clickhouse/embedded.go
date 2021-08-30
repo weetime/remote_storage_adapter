@@ -2,5 +2,5 @@ package clickhouse
 
 import "embed"
 
-//go:embed clickhouse/sqlscripts/*
+//go:embed sqlscripts/*
 var EmbeddedScripts embed.FS
