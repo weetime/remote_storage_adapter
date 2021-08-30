@@ -7,4 +7,3 @@ jobs:
     steps:
       - name: Format
         run: make fmt
-        continue-on-error: true
