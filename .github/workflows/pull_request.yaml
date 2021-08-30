@@ -1,0 +1,11 @@
+name: Pull request
+on: pull_request
+jobs:
+  format:
+    name: Format & lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Format
+        run: make fmt
+      - name: Lint
+        run: make lint
