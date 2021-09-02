@@ -1,13 +1,10 @@
-name: Push
+name: Format & Lint
 on:
   push:
-    branches:
-      - main
   pull_request:
-    branches:
-      - '*'
+
 jobs:
-  format_lint:
+  format-lint:
     name: Format & Lint
     runs-on: ubuntu-latest
     steps:
