@@ -1,0 +1,17 @@
+name: Push
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '*'
+jobs:
+  format_lint:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Format
+        run: make fmt
+      - name: Lint
+        run: make lint
