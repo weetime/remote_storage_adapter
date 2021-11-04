@@ -16,8 +16,8 @@ package clickhouse
 import (
 	"database/sql"
 	"fmt"
-	"math"
 	"os"
+	"math"
 	"strings"
 
 	_ "github.com/ClickHouse/clickhouse-go"
