@@ -18,7 +18,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	clickhouseGo "github.com/ClickHouse/clickhouse-go"
 	"io/ioutil"
 	"net/http"
 	_ "net/http/pprof"
@@ -28,6 +27,8 @@ import (
 	"remote_storage_adapter/clickhouse"
 	"sync"
 	"time"
+
+	clickhouseGo "github.com/ClickHouse/clickhouse-go"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -62,9 +63,9 @@ type config struct {
 	clickhouseUsername      string
 	clickhousePassword      string
 	clickhouseDatabase      string
-	clickhouseTable       string
-	clickhouseCaPath      string
-	clickhouseReadTimeout time.Duration
+	clickhouseTable         string
+	clickhouseCaPath        string
+	clickhouseReadTimeout   time.Duration
 	clickhouseWriteTimeout  time.Duration
 	clickhouseAltHosts      string
 	remoteTimeout           time.Duration
@@ -236,7 +237,6 @@ func buildClients(logger log.Logger, cfg *config) ([]writer, []reader) {
 		readers = append(readers, c)
 	}
 	if cfg.clickhouseURL != "" {
-
 		options := make(url.Values)
 		options.Set("database", cfg.clickhouseDatabase)
 		options.Set("username", cfg.clickhouseUsername)

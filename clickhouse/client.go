@@ -15,6 +15,7 @@ package clickhouse
 
 import (
 	"database/sql"
+	"fmt"
 	"math"
 	"os"
 	"strings"
@@ -57,6 +58,10 @@ func NewClient(logger log.Logger, dsn string, database string, table string) *Cl
 		os.Exit(1)
 	}
 
+	if err = initDb(db, table); err != nil {
+		_ = level.Error(logger).Log("execute init scripts", err)
+	}
+
 	return &Client{
 		logger:   logger,
 		db:       db,
@@ -75,6 +80,40 @@ func NewClient(logger log.Logger, dsn string, database string, table string) *Cl
 			},
 		),
 	}
+}
+
+func initDb(db *sql.DB, table string) error {
+	sqlStmts := make([]string, 0)
+	f, err := EmbeddedScripts.ReadFile("sqlscripts/0001-create-table.sql")
+	if err != nil {
+		return err
+	}
+	sqlStmts = append(sqlStmts, fmt.Sprintf(string(f), table))
+	return executeScripts(db, sqlStmts)
+}
+
+func executeScripts(db *sql.DB, stmts []string) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	committed := false
+	defer func() {
+		if !committed {
+			// not a real rollback
+			_ = tx.Rollback()
+		}
+	}()
+
+	for _, stmt := range stmts {
+		if _, err = db.Exec(stmt); err != nil {
+			return err
+		}
+	}
+
+	committed = true
+	return tx.Commit()
 }
 
 // Write sends a batch of samples to InfluxDB via its HTTP API.
@@ -101,7 +140,7 @@ func (c *Client) Write(samples model.Samples) error {
 			continue
 		}
 
-		if _, err = smt.Exec(ts, m.metricName(), m.tagsFromMetric(), v, ts);  err != nil {
+		if _, err = smt.Exec(ts, m.metricName(), m.tagsFromMetric(), v, ts); err != nil {
 			_ = level.Error(c.logger).Log("statement exec:", err)
 			c.ignoredSamples.Inc()
 			continue
