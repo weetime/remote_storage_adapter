@@ -108,7 +108,7 @@ func (s *sqlBuilder) formatQuery() error {
 		case prompb.LabelMatcher_RE, prompb.LabelMatcher_NRE:
 			var tagFormat string
 			var val string
-			if m.Type == prompb.LabelMatcher_EQ {
+			if m.Type == prompb.LabelMatcher_RE {
 				tagFormat = ` AND arrayExists(x -> 1 == match(x, '^%s=%s'),tags) = 1 `
 			} else {
 				tagFormat = ` AND arrayExists(x -> 1 == match(x, '^%s=%s'),tags) = 0 `
