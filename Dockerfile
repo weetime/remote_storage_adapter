@@ -6,7 +6,7 @@ WORKDIR /build
 RUN go build .
 
 
-FROM alpine:latest
+FROM alpine:3.23.3
 
 COPY --from=builder /build/remote_storage_adapter /remote_storage_adapter
 
